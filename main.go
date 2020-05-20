@@ -48,8 +48,7 @@ func dumpMap(space string, m map[string]interface{}) {
 }
 
 func historyReport(ctx *fasthttp.RequestCtx) {
-	ctx.Response.Header.Set("Content-Type","application/json")
-	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+	
 	db, err := sql.Open("postgres",
 		"postgresql://root@LAPTOP-A6RUSVME:26257?sslmode=disable")
 	if err != nil {
@@ -81,12 +80,12 @@ func historyReport(ctx *fasthttp.RequestCtx) {
 	}
 	
 	fmt.Fprint(ctx, string(serialized))
-
+	ctx.Response.Header.Set("Content-Type","application/json")
+	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
 }
 
 func singleReport(ctx *fasthttp.RequestCtx) {
-	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
-	ctx.Response.Header.Set("Content-Type","application/json")
+
 	qdomain := ctx.UserValue("domain").(string)
 
 	db, err := sql.Open("postgres",
@@ -131,6 +130,11 @@ func singleReport(ctx *fasthttp.RequestCtx) {
 	}
 
 	if status == "ERROR" {
+		status,ok = dat["statusMessage"].(string)
+		if !ok{
+			status="Unknown error"
+		}
+		ctx.Error(status, fasthttp.StatusInternalServerError)
 		response := &QueryResult{}
 		response.IsDown = true
 		serialized, err := json.Marshal(response)
@@ -228,9 +232,8 @@ func singleReport(ctx *fasthttp.RequestCtx) {
 		}
 
 	}
-	//fmt.Fprint(ctx, string(responseData))
-
-	//fmt.Println(testTime)
+	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+	ctx.Response.Header.Set("Content-Type","application/json")
 
 }
 
@@ -241,30 +244,12 @@ func main() {
 	if err != nil {
 		log.Fatal("error connecting to the database: ", err)
 	}
-	if _, err := db.Exec(
-		"CREATE TABLE IF NOT EXISTS test (time TIMESTAMP not null,PRIMARY KEY (time))"); err != nil {
-		log.Fatal(err)
-	}
 
 	if _, err := db.Exec(
 		"CREATE TABLE IF NOT EXISTS tests (time TIMESTAMP not null,domain STRING not null , result JSONB not null,PRIMARY KEY (domain))"); err != nil {
 		log.Fatal(err)
 	}
 
-	// if _, err := db.Exec(
-	// 	"insert into test values (now())"); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// rows, err := db.Query("SELECT * FROM test")
-	// defer rows.Close()
-	// for rows.Next() {
-	// 	var time time.Time
-	// 	if err := rows.Scan(&time); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	fmt.Printf("%s\n", time.Local())
-	// }
 
 	router := fasthttprouter.New()
 	router.GET("/report/:domain", singleReport)
