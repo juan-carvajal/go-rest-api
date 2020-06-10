@@ -1,17 +1,19 @@
 package main
 
-import "fmt"
-import "github.com/buaazp/fasthttprouter"
-import "github.com/valyala/fasthttp"
-
 import (
 	"database/sql"
 	"encoding/json"
-	_ "github.com/lib/pq"
+	"fmt"
+
+	"github.com/buaazp/fasthttprouter"
+	"github.com/valyala/fasthttp"
+
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 type ServerInfo struct {
@@ -48,7 +50,7 @@ func dumpMap(space string, m map[string]interface{}) {
 }
 
 func historyReport(ctx *fasthttp.RequestCtx) {
-	
+
 	db, err := sql.Open("postgres",
 		"postgresql://root@LAPTOP-A6RUSVME:26257?sslmode=disable")
 	if err != nil {
@@ -78,9 +80,9 @@ func historyReport(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		ctx.Error("Unable to serialize data", fasthttp.StatusInternalServerError)
 	}
-	
+
 	fmt.Fprint(ctx, string(serialized))
-	ctx.Response.Header.Set("Content-Type","application/json")
+	ctx.Response.Header.Set("Content-Type", "application/json")
 	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
 }
 
@@ -104,10 +106,12 @@ func singleReport(ctx *fasthttp.RequestCtx) {
 		ctx.Error("Can not read data from SSL analysis provider", fasthttp.StatusInternalServerError)
 	}
 	json.Unmarshal(responseData, &dat)
-	status,ok := dat["status"].(string)
-	if ! ok {status="ERROR"}
-	fmt.Println("Querying for ",qdomain," Status:",status)
-	for status != "READY" && status!="ERROR" {
+	status, ok := dat["status"].(string)
+	if !ok {
+		status = "ERROR"
+	}
+	fmt.Println("Querying for ", qdomain, " Status:", status)
+	for status != "READY" && status != "ERROR" {
 		resp, err = http.Get("https://api.ssllabs.com/api/v3/analyze?host=" + qdomain)
 
 		if err != nil {
@@ -122,7 +126,7 @@ func singleReport(ctx *fasthttp.RequestCtx) {
 		}
 		json.Unmarshal(responseData, &dat)
 		status = dat["status"].(string)
-		fmt.Println("Querying for ",qdomain," Status:",status)
+		fmt.Println("Querying for ", qdomain, " Status:", status)
 		if status == "ERROR" {
 			break
 		}
@@ -130,9 +134,9 @@ func singleReport(ctx *fasthttp.RequestCtx) {
 	}
 
 	if status == "ERROR" {
-		status,ok = dat["statusMessage"].(string)
-		if !ok{
-			status="Unknown error"
+		status, ok = dat["statusMessage"].(string)
+		if !ok {
+			status = "Unknown error"
 		}
 		ctx.Error(status, fasthttp.StatusInternalServerError)
 		response := &QueryResult{}
@@ -167,11 +171,11 @@ func singleReport(ctx *fasthttp.RequestCtx) {
 		for _, endpoint := range endpointSlice {
 			server := &ServerInfo{}
 			server.Address = endpoint.(map[string]interface{})["ipAddress"].(string)
-			sslg,ok:=endpoint.(map[string]interface{})["grade"].(string)
-			if ok{
+			sslg, ok := endpoint.(map[string]interface{})["grade"].(string)
+			if ok {
 				server.SSLGrade = sslg
 			}
-			
+
 			name, country, err := getWhoIsData(server.Address)
 			if err == nil {
 				server.Country = country
@@ -182,7 +186,7 @@ func singleReport(ctx *fasthttp.RequestCtx) {
 			servers = append(servers, *server)
 		}
 		currentTest.Servers = servers
-		logo,title,err:=GetHTMLInfo(qdomain)
+		logo, title, err := GetHTMLInfo(qdomain)
 
 		if err == nil {
 			currentTest.Title = title
@@ -191,14 +195,14 @@ func singleReport(ctx *fasthttp.RequestCtx) {
 
 		bestGrade := "Z"
 		for _, m := range servers {
-			if m.SSLGrade!="" && m.SSLGrade < bestGrade {
+			if m.SSLGrade != "" && m.SSLGrade < bestGrade {
 				bestGrade = m.SSLGrade
 			}
 		}
 		if bestGrade != "Z" {
 			currentTest.SSLGrade = bestGrade
-		}else{
-			currentTest.SSLGrade="Undetermined"
+		} else {
+			currentTest.SSLGrade = "Undetermined"
 		}
 		currentTest.ServersChanged = false
 		if exist {
@@ -227,20 +231,20 @@ func singleReport(ctx *fasthttp.RequestCtx) {
 				log.Print(err)
 				ctx.Error("Unable to insert test result", fasthttp.StatusInternalServerError)
 			}
-			
+
 			fmt.Fprint(ctx, string(serialized))
 		}
 
 	}
 	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
-	ctx.Response.Header.Set("Content-Type","application/json")
+	ctx.Response.Header.Set("Content-Type", "application/json")
 
 }
 
 func main() {
 
 	db, err := sql.Open("postgres",
-		"postgresql://root@LAPTOP-A6RUSVME:26257?sslmode=disable")
+		"postgresql://root@DESKTOP-F7UV418:26257?sslmode=disable")
 	if err != nil {
 		log.Fatal("error connecting to the database: ", err)
 	}
@@ -249,7 +253,6 @@ func main() {
 		"CREATE TABLE IF NOT EXISTS tests (time TIMESTAMP not null,domain STRING not null , result JSONB not null,PRIMARY KEY (domain))"); err != nil {
 		log.Fatal(err)
 	}
-
 
 	router := fasthttprouter.New()
 	router.GET("/report/:domain", singleReport)
