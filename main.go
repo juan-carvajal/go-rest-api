@@ -52,7 +52,7 @@ func dumpMap(space string, m map[string]interface{}) {
 func historyReport(ctx *fasthttp.RequestCtx) {
 
 	db, err := sql.Open("postgres",
-		"postgresql://root@LAPTOP-A6RUSVME:26257?sslmode=disable")
+		"postgresql://root@DESKTOP-F7UV418:26257?sslmode=disable")
 	if err != nil {
 		ctx.Error("Can not connect to the database", fasthttp.StatusInternalServerError)
 	}
@@ -91,7 +91,7 @@ func singleReport(ctx *fasthttp.RequestCtx) {
 	qdomain := ctx.UserValue("domain").(string)
 
 	db, err := sql.Open("postgres",
-		"postgresql://root@LAPTOP-A6RUSVME:26257?sslmode=disable")
+		"postgresql://root@DESKTOP-F7UV418:26257?sslmode=disable")
 	if err != nil {
 		ctx.Error("Can not connect to the database", fasthttp.StatusInternalServerError)
 	}
