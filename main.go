@@ -94,7 +94,9 @@ func singleReport(ctx *fasthttp.RequestCtx) {
 		"postgresql://root@DESKTOP-F7UV418:26257?sslmode=disable")
 	if err != nil {
 		ctx.Error("Can not connect to the database", fasthttp.StatusInternalServerError)
+		return
 	}
+	defer db.Close()
 	resp, err := http.Get("https://api.ssllabs.com/api/v3/analyze?host=" + qdomain + "&fromCache=on&maxAge=1")
 	if err != nil {
 		ctx.Error("Can not read data from SSL analysis provider", fasthttp.StatusInternalServerError)
